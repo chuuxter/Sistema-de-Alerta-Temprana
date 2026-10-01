@@ -16,6 +16,14 @@ function Home() {
         <button style={styles.button} onClick={() => navigate('/prediccion')}>
           Iniciar
         </button>
+
+        {/* Botón temporal para pruebas */}
+        <button
+          style={styles.buttonTemp}
+          onClick={() => navigate('/clasificacion-logica')}
+        >
+          [TEMPORAL] Ir a Clasificación Lógica
+        </button>
       </div>
     </div>
   );
@@ -55,6 +63,17 @@ const styles = {
     padding: '12px 32px',
     borderRadius: '8px',
     fontSize: '16px',
+    cursor: 'pointer',
+  },
+  buttonTemp: {
+    display: 'block',
+    marginTop: '16px',
+    backgroundColor: '#f59e0b',
+    color: '#fff',
+    border: 'none',
+    padding: '10px 24px',
+    borderRadius: '8px',
+    fontSize: '13px',
     cursor: 'pointer',
   },
 };
