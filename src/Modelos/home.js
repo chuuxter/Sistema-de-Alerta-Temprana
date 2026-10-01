@@ -1,4 +1,3 @@
-// src/components/Home.js
 import { useNavigate } from 'react-router-dom';
 
 function Home() {
@@ -13,7 +12,7 @@ function Home() {
           de enseñanza personalizadas según el estilo de aprendizaje del
           alumno.
         </p>
-        <button style={styles.button} onClick={() => navigate('/prediccion')}>
+        <button style={styles.button} onClick={() => navigate('/escogerCurso')}>
           Iniciar
         </button>
 
