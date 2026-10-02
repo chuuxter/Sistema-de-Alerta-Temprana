@@ -1,8 +1,8 @@
 // src/App.js
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './Modelos/home.js' ;
-import ClasificacionLogica from './Modelos/Clasificacion/Componentes/clasificacion_logica.js';
-import ResultadoVark from './Modelos/Clasificacion/Componentes/resultadoVark.js';
+import ClasificacionLogica from './Modelos/Clasificacion/Componentes/introVark.js';
+import ResultadoVark from './Modelos/Clasificacion/Componentes/enviarVark.js';
 import EscogerCurso from './Modelos/Prediccion/escogerCurso.js';
 import CuestionarioAritmetica from './Modelos/Prediccion/Cuestionarios/cuestionarioAritmetica.js';
 import CuestionarioAlgebra from './Modelos/Prediccion/Cuestionarios/cuestionarioAlgebra.js';
@@ -11,7 +11,7 @@ import CuestionarioRazonamientoMatematico from './Modelos/Prediccion/Cuestionari
 import CuestionarioQuimica from './Modelos/Prediccion/Cuestionarios/cuestionarioQuimica.js';
 import CuestionarioBiologia from './Modelos/Prediccion/Cuestionarios/cuestionarioBiologia.js';
 import CuestionarioFisica from './Modelos/Prediccion/Cuestionarios/cuestionarioFisica.js';
-import PantallaResultado from './Modelos/Clasificacion/Componentes/pantallaResultado.js';
+import PantallaResultado from './Modelos/Clasificacion/Componentes/resultadoVark.js';
 
 function App() {
   return (
