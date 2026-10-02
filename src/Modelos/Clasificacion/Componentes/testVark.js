@@ -1,6 +1,5 @@
 // src/components/VarkTest.js
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const preguntas = [
   {
@@ -166,12 +165,16 @@ const preguntas = [
   },
 ];
 
-function VarkTest() {
-  const navigate = useNavigate();
+function VarkTest({
+  onFinish,
+  titulo = 'Test VARK',
+  textoBoton = 'Enviar respuestas',
+  enviando = false,
+}) {
   const [respuestas, setRespuestas] = useState({});
 
   const totalPreguntas = preguntas.length;
-  const respondidas = Object.keys(respuestas).length;
+  const respondidas = Object.values(respuestas).filter((a) => a.length > 0).length;
   const progreso = Math.round((respondidas / totalPreguntas) * 100);
 
   const handleSeleccion = (idPregunta, letra) => {
@@ -190,17 +193,14 @@ function VarkTest() {
       alert('Por favor responde todas las preguntas antes de continuar.');
       return;
     }
-    // Aquí se enviarían las respuestas al backend / modelo de clasificación.
-    // navigate('/resultado-clasificacion', { state: { respuestas } });
-    console.log('Respuestas VARK:', respuestas);
-    navigate('/resultado-clasificacion');
+    if (onFinish) onFinish(respuestas);
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <h1 style={styles.title}>Test VARK</h1>
+          <h1 style={styles.title}>{titulo}</h1>
           <div style={styles.progressBarBg}>
             <div
               style={{ ...styles.progressBarFill, width: `${progreso}%` }}
@@ -248,8 +248,12 @@ function VarkTest() {
           </div>
         ))}
 
-        <button style={styles.button} onClick={handleEnviar}>
-          Enviar respuestas
+        <button
+          style={{ ...styles.button, ...(enviando ? styles.buttonDisabled : {}) }}
+          onClick={handleEnviar}
+          disabled={enviando}
+        >
+          {enviando ? 'Enviando...' : textoBoton}
         </button>
       </div>
     </div>
@@ -266,18 +270,24 @@ const styles = {
   },
   card: {
     backgroundColor: '#ffffff',
-    padding: '32px',
+    padding: '0 32px 32px',
     borderRadius: '12px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
     maxWidth: '680px',
     width: '100%',
   },
   header: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
+    backgroundColor: '#ffffff',
+    padding: '20px 0 12px',
     marginBottom: '20px',
+    borderBottom: '1px solid #e5e7eb',
   },
   title: {
     fontSize: '26px',
-    marginBottom: '12px',
+    margin: '0 0 12px',
     color: '#1a1a1a',
     textAlign: 'center',
   },
@@ -297,7 +307,7 @@ const styles = {
     fontSize: '12px',
     color: '#6b7280',
     textAlign: 'center',
-    marginTop: '6px',
+    margin: '6px 0 0',
   },
   instrucciones: {
     fontSize: '14px',
@@ -359,6 +369,10 @@ const styles = {
     cursor: 'pointer',
     width: '100%',
     marginTop: '12px',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+    cursor: 'not-allowed',
   },
 };
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Dict, List
 import traceback
 import unicodedata
 
@@ -13,7 +14,7 @@ from pydantic import BaseModel
 # ---------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
 MODELOS_DIR = BASE_DIR / "Modelos_ML"   # carpeta junto a server.py
-PREFIJO = "rf_"                     # rf3_Algebra.joblib -> curso "Algebra"
+PREFIJO = "rf_"                         # rf_Algebra.joblib -> curso "Algebra"
 
 app = FastAPI()
 app.add_middleware(
@@ -29,13 +30,14 @@ app.add_middleware(
 
 
 def normalizar(texto: str) -> str:
-    """'Álgebra ' -> 'algebra' (sin tildes, minúsculas)."""
-    t = unicodedata.normalize("NFD", texto)
-    return "".join(c for c in t if unicodedata.category(c) != "Mn").lower().strip()
+    """'Álgebra ' -> 'algebra' (sin tildes, minúsculas; '_' cuenta como espacio)."""
+    t = unicodedata.normalize("NFD", texto.replace("_", " "))
+    t = "".join(c for c in t if unicodedata.category(c) != "Mn")
+    return " ".join(t.lower().split())
 
 
 # ---------------------------------------------------------------
-# Carga de modelos (acepta modelo directo o paquete dict)
+# MODELOS DE PREDICCIÓN (acepta modelo directo o paquete dict)
 # ---------------------------------------------------------------
 MODELOS = {}
 COLUMNAS = {}
@@ -68,9 +70,9 @@ NIVELES = {
     "a": "Primaria",
     "b": "Secundaria",
     "c": "Superior técnico",
-    "d": "Superior Universitario",   # U mayúscula, como en tu dataset
+    "d": "Superior Universitario",
     "e": "Estudios de posgrado",
-    "f": None,                       # No tengo papá / mamá
+    "f": None,
 }
 
 MAPA = {
@@ -80,7 +82,7 @@ MAPA = {
            "d": "Cuatro o más comidas al día"},
     "P8": {"a": "Si, tengo internet estable todo el tiempo",
            "b": "Si, pero a veces se corta o es lento",
-           "c": None,   # "Solo a veces": sin columna propia, verifica con tu dataset
+           "c": None,
            "d": None},
     "P9": {"a": None, "b": "Trabajo ocasionalmente (fines de semana o vacaciones)",
            "c": "Trabajo algunas horas entre semana",
@@ -112,7 +114,10 @@ def elegir(mapa: dict, letra: str, campo: str):
 
 @app.get("/")
 def estado():
-    return {"cursos_disponibles": list(MODELOS.keys())}
+    return {
+        "cursos_disponibles": list(MODELOS.keys()),
+        "vark_disponible": VARK is not None,
+    }
 
 
 @app.post("/predecir/{curso}")
@@ -123,7 +128,6 @@ def predecir(curso: str, r: Respuestas):
         raise HTTPException(404, f"Curso no disponible: {curso}")
 
     columnas = COLUMNAS[clave]
-    print("COLUMNAS DEL MODELO:", columnas)   # temporal, bórralo cuando todo funcione
 
     idx = {c.strip(): c for c in columnas}    # tolera espacios al final
     fila = {c: 0 for c in columnas}
@@ -180,4 +184,49 @@ def predecir(curso: str, r: Respuestas):
         "en_riesgo": en_riesgo,
         "prob_riesgo": round(probs.get("false", 0.0), 3),
         "prob_aprueba": round(probs.get("true", 0.0), 3),
+    }
+
+
+# ---------------------------------------------------------------
+# VARK (clasificación de estilo de aprendizaje)
+# Si falla al cargar, NO afecta a la predicción.
+# ---------------------------------------------------------------
+VARK = None
+try:
+    _vark = joblib.load(MODELOS_DIR / "modelo_vark.joblib")
+    VARK = {
+        "modelo": _vark["modelo"],
+        "scaler": _vark["scaler"],
+        "le": _vark["label_encoder"],
+        "columnas": _vark["columnas"],
+    }
+    print("Modelo VARK cargado")
+except Exception as e:
+    print(f"ATENCIÓN: no se pudo cargar el modelo VARK: {type(e).__name__}: {e}")
+
+
+class EntradaVark(BaseModel):
+    respuestas: Dict[str, List[str]]
+
+
+@app.post("/clasificar")
+def clasificar(datos: EntradaVark):
+    if VARK is None:
+        raise HTTPException(503, "El modelo VARK no está disponible en este servidor")
+
+    fila = {c: 0 for c in VARK["columnas"]}
+    for id_preg, letras in datos.respuestas.items():
+        for letra in letras:
+            col = f"{letra}{id_preg}"
+            if col in fila:
+                fila[col] = 1
+
+    X = pd.DataFrame([fila], columns=VARK["columnas"])
+    X_in = VARK["scaler"].transform(X) if VARK["scaler"] is not None else X
+
+    proba = VARK["modelo"].predict_proba(X_in)[0]
+    idx = int(proba.argmax())
+    return {
+        "estilo": VARK["le"].inverse_transform([idx])[0],
+        "probabilidades": {c: float(p) for c, p in zip(VARK["le"].classes_, proba)},
     }

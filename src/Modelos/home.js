@@ -15,14 +15,6 @@ function Home() {
         <button style={styles.button} onClick={() => navigate('/escogerCurso')}>
           Iniciar
         </button>
-
-        {/* Botón temporal para pruebas */}
-        <button
-          style={styles.buttonTemp}
-          onClick={() => navigate('/clasificacion-logica')}
-        >
-          [TEMPORAL] Ir a Clasificación Lógica
-        </button>
       </div>
     </div>
   );

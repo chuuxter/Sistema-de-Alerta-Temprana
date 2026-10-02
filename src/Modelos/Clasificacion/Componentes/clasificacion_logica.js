@@ -1,8 +1,9 @@
 // src/components/clasificacion_logica.js
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function ClasificacionLogica() {
   const navigate = useNavigate();
+  const { state } = useLocation();   // { curso, resultado }
 
   return (
     <div style={styles.container}>
@@ -50,7 +51,7 @@ function ClasificacionLogica() {
 
         <button
           style={styles.button}
-          onClick={() => navigate('/vark-test')}
+          onClick={() => navigate('/vark-test',{ state })}
         >
           Comenzar Test
         </button>
