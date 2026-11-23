@@ -2,7 +2,7 @@ const preguntas = [
   {
     id: 1,
     variable: 'genero',
-    texto: 'Género:',
+    texto: '¿Cuál es tu género?',
     opciones: {
       a: 'Hombre',
       b: 'Mujer',
@@ -11,6 +11,18 @@ const preguntas = [
 
   {
     id: 2,
+    variable: 'con_quien_vive',
+    texto: '¿Con quién vives actualmente?',
+    opciones: {
+      a: 'Con mi papá y mi mamá',
+      b: 'Solo con mi mamá',
+      c: 'Solo con mi papá',
+      d: 'Otros (abuelos, tíos, tutor, etc.)',
+    },
+  },
+
+  {
+    id: 3,
     variable: 'nivel_academico_papa',
     texto: '¿Cuál es el nivel académico de tu papá?',
     opciones: {
@@ -24,7 +36,7 @@ const preguntas = [
   },
 
   {
-    id: 3,
+    id: 4,
     variable: 'nivel_academico_mama',
     texto: '¿Cuál es el nivel académico de tu mamá?',
     opciones: {
@@ -38,7 +50,7 @@ const preguntas = [
   },
 
   {
-    id: 4,
+    id: 5,
     variable: 'estudia_fuera_horario',
     texto: '¿Sueles estudiar tus cursos fuera del horario escolar?',
     opciones: {
@@ -48,7 +60,7 @@ const preguntas = [
   },
 
   {
-    id: 5,
+    id: 6,
     variable: 'entorno_estudio',
     texto: '¿Cuentas con un entorno adecuado para tu estudio?',
     opciones: {
@@ -58,7 +70,7 @@ const preguntas = [
   },
 
   {
-    id: 6,
+    id: 7,
     variable: 'horas_estudio',
     texto: '¿Cuántas horas al día dedicas al estudio fuera del colegio?',
     opciones: {
@@ -70,7 +82,7 @@ const preguntas = [
   },
 
   {
-    id: 7,
+    id: 8,
     variable: 'comidas_dia',
     texto: '¿Cuántas comidas al día sueles consumir regularmente?',
     opciones: {
@@ -82,40 +94,40 @@ const preguntas = [
   },
 
   {
-    id: 8,
+    id: 9,
     variable: 'acceso_internet',
     texto:
       '¿Tienes acceso a internet en casa para realizar tareas y estudiar?',
     opciones: {
-      a: 'Sí, tengo internet estable todo el tiempo',
+      a: 'Sí, con internet estable',
       b: 'Sí, pero a veces se corta o es lento',
-      c: 'Solo a veces (internet limitado)',
+      c: 'Solo tengo acceso limitado (datos móviles o recargas)',
       d: 'No tengo acceso a internet en casa',
     },
   },
 
   {
-    id: 9,
+    id: 10,
     variable: 'trabajo_fuera_horario',
     texto: '¿Trabajas fuera del horario escolar?',
     opciones: {
       a: 'No trabajo',
-      b: 'Trabajo ocasionalmente (fines de semana o vacaciones)',
+      b: 'Trabajo solo fines de semana o vacaciones',
       c: 'Trabajo algunas horas entre semana',
       d: 'Trabajo todos los días después del colegio',
     },
   },
 
   {
-    id: 10,
+    id: 11,
     variable: 'responsabilidades_domesticas',
     texto:
       '¿Tienes responsabilidades domésticas que interfieren con tu tiempo de estudio?',
     opciones: {
-      a: 'No tengo responsabilidades domésticas significativas',
-      b: 'Ayudo en casa pero no interfiere con mis estudios',
-      c: 'Tengo bastantes responsabilidades que a veces interfieren',
-      d: 'Tengo muchas responsabilidades que frecuentemente interfieren con mis estudios',
+      a: 'No tengo responsabilidades importantes en casa',
+      b: 'Ayudo en casa, pero no interfiere con mis estudios',
+      c: 'Tengo bastantes y a veces interfieren con mis estudios',
+      d: 'Tengo muchas y casi siempre interfieren con mis estudios',
     },
   },
 ];

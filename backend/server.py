@@ -36,6 +36,13 @@ def normalizar(texto: str) -> str:
     return " ".join(t.lower().split())
 
 
+def normalizar_col(texto: str) -> str:
+    """Para comparar nombres de columnas: ignora tildes, mayúsculas, comas y paréntesis."""
+    t = normalizar(texto)
+    t = "".join(ch for ch in t if ch.isalnum() or ch == " ")
+    return " ".join(t.split())
+
+
 # ---------------------------------------------------------------
 # MODELOS DE PREDICCIÓN (acepta modelo directo o paquete dict)
 # ---------------------------------------------------------------
@@ -65,6 +72,12 @@ if not MODELOS:
 # ---------------------------------------------------------------
 # Mapeo de las letras del cuestionario a las columnas del modelo
 # None = categoría base (todas las dummies de esa pregunta en 0)
+#
+# Numeración del cuestionario (11 preguntas):
+#   P1 género            P2 con quién vive     P3 nivel papá
+#   P4 nivel mamá        P5 estudia fuera      P6 entorno de estudio
+#   P7 horas de estudio  P8 comidas al día     P9 internet
+#   P10 trabajo          P11 responsabilidades domésticas
 # ---------------------------------------------------------------
 NIVELES = {
     "a": "Primaria",
@@ -76,25 +89,28 @@ NIVELES = {
 }
 
 MAPA = {
-    "P6": {"a": None, "b": "Entre 1 y 2 horas", "c": "Entre 2 y 3 horas",
+    "P2": {"a": None, "b": "Solo con mi mamá", "c": "Solo con mi papá",
+           "d": "Otros (abuelos, tíos, tutor, etc.)"},
+    "P7": {"a": None, "b": "Entre 1 y 2 horas", "c": "Entre 2 y 3 horas",
            "d": "Más de 3 horas"},
-    "P7": {"a": None, "b": "Dos comidas al día", "c": "Tres comidas al día",
+    "P8": {"a": None, "b": "Dos comidas al día", "c": "Tres comidas al día",
            "d": "Cuatro o más comidas al día"},
-    "P8": {"a": "Si, tengo internet estable todo el tiempo",
-           "b": "Si, pero a veces se corta o es lento",
+    "P9": {"a": "Sí, con internet estable",
+           "b": "Sí, pero a veces se corta o es lento",
            "c": None,
            "d": None},
-    "P9": {"a": None, "b": "Trabajo ocasionalmente (fines de semana o vacaciones)",
-           "c": "Trabajo algunas horas entre semana",
-           "d": "Trabajo todos los días después del colegio"},
-    "P10": {"a": None, "b": "Ayudo en casa pero no interfiere con mis estudios",
-            "c": "Tengo bastantes responsabilidades que a veces interfieren",
-            "d": "Tengo muchas responsabilidades que frecuentemente interfieren con mis estudios"},
+    "P10": {"a": None, "b": "Trabajo solo fines de semana o vacaciones",
+            "c": "Trabajo algunas horas entre semana",
+            "d": "Trabajo todos los días después del colegio"},
+    "P11": {"a": None, "b": "Ayudo en casa, pero no interfiere con mis estudios",
+            "c": "Tengo bastantes y a veces interfieren con mis estudios",
+            "d": "Tengo muchas y casi siempre interfieren con mis estudios"},
 }
 
 
 class Respuestas(BaseModel):
     genero: str
+    con_quien_vive: str
     nivel_academico_papa: str
     nivel_academico_mama: str
     estudia_fuera_horario: str
@@ -129,13 +145,22 @@ def predecir(curso: str, r: Respuestas):
 
     columnas = COLUMNAS[clave]
 
-    idx = {c.strip(): c for c in columnas}    # tolera espacios al final
+    # tolera espacios al final, tildes, mayúsculas y comas en los nombres
+    idx = {normalizar_col(c): c for c in columnas}
     fila = {c: 0 for c in columnas}
 
     def columna(nombre):
-        if nombre not in idx:
-            raise HTTPException(500, f"Columna no encontrada en el modelo: {nombre}")
-        return idx[nombre]
+        k = normalizar_col(nombre)
+        if k not in idx:
+            prefijo = nombre.split("_")[0]
+            similares = [c.strip() for c in columnas
+                         if c.strip().split("_")[0] == prefijo]
+            raise HTTPException(
+                500,
+                f"Columna no encontrada en el modelo: {nombre}. "
+                f"Columnas {prefijo} del modelo: {similares}",
+            )
+        return idx[k]
 
     def activar(nombre):
         if nombre is not None:
@@ -143,25 +168,30 @@ def predecir(curso: str, r: Respuestas):
 
     # Binarias
     fila[columna("P1_Hombre")] = 1 if r.genero == "a" else 0
-    fila[columna("P4")] = 1 if r.estudia_fuera_horario == "a" else 0   # a = Sí
-    fila[columna("P5")] = 1 if r.entorno_estudio == "a" else 0         # a = Sí
+    fila[columna("P5")] = 1 if r.estudia_fuera_horario == "a" else 0   # a = Sí
+    fila[columna("P6")] = 1 if r.entorno_estudio == "a" else 0         # a = Sí
 
-    # Padres
+    # Con quién vive (P2). Si el modelo se entrenó sin esta pregunta, se ignora.
+    vive = elegir(MAPA["P2"], r.con_quien_vive, "con_quien_vive")
+    if vive and any(c.strip().startswith("P2_") for c in columnas):
+        activar(f"P2_{vive}")
+
+    # Padres (antes P2 y P3, ahora P3 y P4)
     papa = elegir(NIVELES, r.nivel_academico_papa, "nivel_academico_papa")
     mama = elegir(NIVELES, r.nivel_academico_mama, "nivel_academico_mama")
     if papa:
-        activar(f"P2_{papa}")
+        activar(f"P3_{papa}")
     if mama:
-        activar(f"P3_{mama}")
+        activar(f"P4_{mama}")
     fila[columna("TieneAmbosPadres")] = 1 if (papa and mama) else 0
 
     # Categóricas
     for pregunta, letra, campo in [
-        ("P6", r.horas_estudio, "horas_estudio"),
-        ("P7", r.comidas_dia, "comidas_dia"),
-        ("P8", r.acceso_internet, "acceso_internet"),
-        ("P9", r.trabajo_fuera_horario, "trabajo_fuera_horario"),
-        ("P10", r.responsabilidades_domesticas, "responsabilidades_domesticas"),
+        ("P7", r.horas_estudio, "horas_estudio"),
+        ("P8", r.comidas_dia, "comidas_dia"),
+        ("P9", r.acceso_internet, "acceso_internet"),
+        ("P10", r.trabajo_fuera_horario, "trabajo_fuera_horario"),
+        ("P11", r.responsabilidades_domesticas, "responsabilidades_domesticas"),
     ]:
         nombre = elegir(MAPA[pregunta], letra, campo)
         if nombre:
@@ -185,7 +215,6 @@ def predecir(curso: str, r: Respuestas):
         "prob_riesgo": round(probs.get("false", 0.0), 3),
         "prob_aprueba": round(probs.get("true", 0.0), 3),
     }
-
 
 # ---------------------------------------------------------------
 # VARK (clasificación de estilo de aprendizaje)
